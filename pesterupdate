@@ -6,27 +6,51 @@ detectSync=false #y
 detectSystemUpgrade=false #u
 
 timeSeconds=86400 #t
+timeArgument= #t
 
 printAllClear=false #p
 
-while getopts yupf:t: caseLetter
+outOfDateMsg="+\e[33mLast full system update performed on \e[31m[%c].\e[33m Please run pacman -Syu\e[0m" #o
+inDateMsg="+Last full system update update performed on \e[34m[%c].\e[0m All Clear!" #i
+
+while getopts yupf:t:o:i: caseLetter
 do
 	case $caseLetter in
 		f) pacmanLog=$OPTARG;;
-		t) timeSeconds=$OPTARG;;
+		t) timeArgument=$OPTARG;;
 
 		y) detectSync=true;;
 		u) detectSystemUpgrade=true;;
 
 		p) printAllClear=true;;
+
+		o) outOfDateMsg=$OPTARG;;
+		i) 
+			inDateMsg=$OPTARG
+			printAllClear=true
+		;;
 	esac
 done
+
+timeMultiplier=1
+if [[ -n $timeArgument ]] ; then
+	case $(grep -oe "[a-zA-Z]$" <<< $timeArgument) in
+		d | D) timeMultiplier=86400 ;;
+		h | H) timeMultiplier=360 ;;
+		m | M) timeMultiplier=60 ;;
+	esac
+		
+	timeSeconds=$(( $(grep -oe "[0-9]*" <<< $timeArgument) * timeMultiplier))
+fi
+
+
 
 #there is probably a better way to handle a default case. Oh well.
 if [[ $detectSync == false && $detectSystemUpgrade == false ]] ; then
 	detectSync=true
 	detectSystemUpgrade=true
 fi
+
 
 
 lastSystemUpgradeTime=
@@ -57,7 +81,7 @@ else
 fi
 
 if [[ $lastUpdateSeconds -gt $timeSeconds ]] ; then
-	echo -e "\e[33mLast full system update performed on \e[31m[$(date -Is -d "$lastUpdateTime")].\e[33m Please run pacman -Syu\e[0m"
+	echo -e "$(date -d "$lastUpdateTime" "+$outOfDateMsg")"
 elif [ $printAllClear == true ] ; then
-	echo -e "Last full system update update performed on \e[34m[$(date -Is -d "$lastUpdateTime")].\e[0m All Clear!"
+	echo -e "$(date -d "$lastUpdateTime" "+$inDateMsg")"
 fi

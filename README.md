@@ -5,11 +5,13 @@ by default, the command checks to see when the last update was by reading readin
 
 command line arguments exist to modify function and output as desired
 ```
--t set a time (in seconds) as the desired maximum update
+-t set a time ending with appropiate unit (D/H/M/S) as the desired maximum update
 -f specify a path to an alternate pacman log
 -y decide when the last 'update' was based on the last sync (pacman -Sy). default behavior is -yu
 -u decide when the last 'update' was based on the last upgrade (pacman -Su). default behavior is -yu
--p print an all clear if it has been less then the desired time since an update
+-p in date message if it has been less then the desired time since an update
+-o set a custom out of date message with date formating (man date)
+-i set and print a custom in date message with date formating (man date).
 ```
 
 TODO: format into package, more options
