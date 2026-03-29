@@ -1,0 +1,63 @@
+#!/bin/bash
+
+pacmanLog="/var/log/pacman.log" #f
+
+detectSync=false #y
+detectSystemUpgrade=false #u
+
+timeSeconds=86400 #t
+
+printAllClear=false #p
+
+while getopts yupf:t: caseLetter
+do
+	case $caseLetter in
+		f) pacmanLog=$OPTARG;;
+		t) timeSeconds=$OPTARG;;
+
+		y) detectSync=true;;
+		u) detectSystemUpgrade=true;;
+
+		p) printAllClear=true;;
+	esac
+done
+
+#there is probably a better way to handle a default case. Oh well.
+if [[ $detectSync == false && $detectSystemUpgrade == false ]] ; then
+	detectSync=true
+	detectSystemUpgrade=true
+fi
+
+
+lastSystemUpgradeTime=
+lastSyncTime=
+if [ $detectSystemUpgrade == true ] ; then
+	lastSystemUpgradeTime=$(grep "starting full system upgrade" $pacmanLog | tail -1 | grep -e "^\[\S*\]" -o | grep -e "[-A-Z0-9:]*" -o)
+else
+	lastSystemUpgradeTime=$(date -Is)
+fi
+
+if [ $detectSync == true ] ; then
+	lastSyncTime=$(grep "synchronizing package lists" $pacmanLog | tail -1 | grep -e "^\[\S*\]" -o | grep -e "[-A-Z0-9:]*" -o)
+else
+	lastSystemUpgradeTime=$(date -Is)
+fi
+
+lastSystemUpgradeSeconds=$(( $(date +%s) - $(date -d $lastSystemUpgradeTime +%s) ))
+lastSyncSeconds=$(( $(date +%s) - $(date -d $lastSyncTime +%s)))
+
+lastUpdateTime=
+lastUpdateSeconds=
+if [[ $lastSystemUpgradeSeconds -gt $lastSyncSeconds ]] ; then
+	lastUpdateTime=$lastSystemUpgradeTime
+	lastUpdateSeconds=$lastSystemUpgradeSeconds
+else
+	lastUpdateTime=$lastSyncTime
+	lastUpdateSeconds=$lastSyncSeconds
+fi
+
+if [[ $lastUpdateSeconds -gt $timeSeconds ]] ; then
+	echo -e "\e[33mLast full system update performed on \e[31m[$(date -Is -d "$lastUpdateTime")].\e[33m Please run pacman -Syu\e[0m"
+elif [ $printAllClear == true ] ; then
+	echo -e "Last full system update update performed on \e[34m[$(date -Is -d "$lastUpdateTime")].\e[0m All Clear!"
+fi
